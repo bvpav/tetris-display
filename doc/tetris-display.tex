@@ -1,7 +1,7 @@
 \documentclass[titlepage, oneside, 14pt]{extbook}
 
-\usepackage[english,bulgarian]{babel}
 \usepackage{fontspec}
+\usepackage[english,bulgarian]{babel}
 \usepackage{siunitx}
 \usepackage{hyperref}
 \usepackage{changepage}
@@ -661,13 +661,13 @@ Tetris Display successfully flashed!
 
 В този случай \ard{} UNO микроконтролерът е успешно програмиран и играта ще бъде пусната на свързания дисплей.
 
-\chapter{Заключение}
-
 \tableofcontents
 
+\addtocontents{toc}{\bigskip}
 \addcontentsline{toc}{section}{Съдържание}
 
-\section{Заключение}
+\chapter*{Заключение}
+\addcontentsline{toc}{section}{Заключение}
 
 В заключение, проектът Tetris Display представя нова вариация на старата и харесвана игра Тетрис,
 която е играна от двама играчи.
@@ -676,6 +676,7 @@ Tetris Display successfully flashed!
 игра с приятели. Има много начини да се играе \textmd{Тетрис}, но никоя не е толкова
 забавна, колкото когато играете един срещу друг.
 
-\printbibliography[heading=bibintoc]
+\printbibliography[heading=bibliography,title={Използвана литература}]
+\addcontentsline{toc}{section}{Използвана литература}
 
 \end{document}
