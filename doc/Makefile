@@ -1,5 +1,5 @@
 tetris-display.pdf tetris-display.xdv: tetris-display.tex cites.bib
-	latexmk -pdflatex $<
+	latexmk -xelatex $<
 
 mostlyclean:
 	texclear tetris-display.tex

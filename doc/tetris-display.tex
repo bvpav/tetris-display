@@ -1,8 +1,7 @@
-\documentclass[titlepage, oneside, 12pt]{book}
+\documentclass[titlepage, oneside, 14pt]{extbook}
 
-\usepackage[utf8]{inputenc}
 \usepackage[english,bulgarian]{babel}
-\usepackage[T2A]{fontenc}
+\usepackage{fontspec}
 \usepackage{siunitx}
 \usepackage{hyperref}
 \usepackage{changepage}
@@ -16,9 +15,20 @@
 \usepackage{textcomp}
 \usepackage{gensymb}
 \usepackage{graphicx}
+\usepackage[justification=centering]{caption}
 \usepackage[backend=biber]{biblatex}
 
 \addbibresource{cites.bib}
+
+\setmainfont{Times New Roman}
+\setmonofont{FiraCode Nerd Font}
+\renewcommand{\baselinestretch}{1.5}
+
+\renewcommand{\texttt}[1]{{\small\ttfamily #1}}
+
+\makeatletter
+\def\verbatim@font{\fontsize{10pt}{12pt}\ttfamily}
+\makeatother
 
 \author{Божидар Павлов}
 \title{Tetris Display}
@@ -51,6 +61,7 @@
         \vspace{1cm}
         {\Huge\bfseries\thetitle\par}
         \vfill
+        {\large\bfseries Изготвил \hfill Преподавател\par}
         {\Large\theauthor \hfill Енчо Шахънов\par}
         \vspace{1cm}
         {\large\thedate\par}
@@ -65,7 +76,8 @@
 
 \setcounter{page}{2}
 
-\section{Увод}
+\section*{Увод}
+\addcontentsline{toc}{section}{Увод}
 
 \textmd{Tetris Display} е конзола, на която потребителят може да играе любимата си игра
 \textmd{Тетрис} с приятел. Това е идеалният начин да се забавляват заедно, като се
@@ -86,7 +98,7 @@
 
 \vfill
 
-\begin{figure}[h!]
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\linewidth]{img/prototype1.png}
     \caption{Първи прототип на \textmd{Tetris Display}}
@@ -110,11 +122,11 @@
 При натискане на бутона на оста на енкодера от Играч 2, текущата игра бива прекратена и
 започва нова игра отначало. Това е реализирано със софтуерно нулиране на UNO платката.
 
-\begin{figure}[h!]
-    \label{tetrogrid}
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\linewidth]{img/functional_diagram.drawio.png}
     \caption{Функционална схема на Tetris Display}
+    \label{tetrogrid}
 \end{figure}
 
 
@@ -134,7 +146,7 @@
 програмирането на платката. Тези фактори я правият добър избор за
 проекта.
 
-\begin{figure}[h!]
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\linewidth]{img/arduino.png}
     \caption{Развойна платка \ard{} UNO}
@@ -157,7 +169,7 @@
 е аналогов изход. Клавиатурата е подходяща за връзка както с развойните платки
 UNO, NANO, така и PIC, MSP и други.
 
-\begin{figure}[h!]
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\linewidth]{img/keypad.png}
     \caption{Аналогова клавиатура}
@@ -167,11 +179,11 @@ UNO, NANO, така и PIC, MSP и други.
 дават успоредно свързаните резистори на късо, променяйки изходното напрежение. То може
 да бъде четено тривиално от аналогов пин на развойната платка UNO.
 
-\begin{figure}[h!]
-    \label{keypad_circuit}
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\linewidth]{img/keypad_circuit.png}
     \caption{Принципна схема на аналогова клавиатура}
+    \label{keypad_circuit}
 \end{figure}
 
 \subsection{Избор на сензор за завъртане}
@@ -182,7 +194,7 @@ UNO, NANO, така и PIC, MSP и други.
 резистор с 3 извода, с който е възможно при промяната на съпротивлението му
 чрез плъзгащ контакт в електрическата верига, да се променя изходното напрежение.
 
-\begin{figure}[h!]
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.3\linewidth]{img/potentiometer.png}
     \caption{Кръгъл потенциометър}
@@ -190,14 +202,14 @@ UNO, NANO, така и PIC, MSP и други.
 
 На фигура \ref{potentiometer_circuit} е изобразена еквивалентната електрическа схема на един потенциометър.
 Ако свържем високия потенциал от входа към захранващия пин на нашия микроконтролер,
-а високия -- към някой от заземените пинове, то тогава потенциалната разлика между
+а високия -- към някой от заземените (GND) пинове, то тогава потенциалната разлика между
 средната точка и нулата може да бъде управлявана от ориентацията на плъзгача.
 
-\begin{figure}[h!]
-    \label{potentiometer_circuit}
+\begin{figure}[!htbp]
     \centering
-    \includegraphics[width=0.5\linewidth]{img/potentiometer_circuit.png}
+    \includegraphics[width=0.7\linewidth]{img/potentiometer_circuit.png}
     \caption{Потенциометър в електрическа верига и неговата еквивалентна схема}
+    \label{potentiometer_circuit}
 \end{figure}
 
 
@@ -220,7 +232,7 @@ UNO, NANO, така и PIC, MSP и други.
 бъде завъртан в интервал от 360\textdegree{} -- както в посока на часовниковата
 стрелка, така и в обратна на нея.
 
-\begin{figure}[h!]
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\linewidth]{img/encoder.png}
     \caption{Модул ротационен енкодер}
@@ -258,11 +270,11 @@ UNO, NANO, така и PIC, MSP и други.
 В Тетрис съществуват седем различни Тетроминота, като всяко едно от тях може да бъде обърнато по 4 начина.
 Всяко едно от тях може да бъде нанесено върху мрежа с размер 4x4 по начинът, изобразен на фигура \ref{tetrogrid}.
 
-\begin{figure}[h!]
-    \label{tetrogrid}
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\linewidth]{img/tetrominoes_grid.drawio.png}
     \caption{\textit{Тетроминота}, нанесени върху 4x4 мрежа с координатна система}
+    \label{tetrogrid}
 \end{figure}
 
 Съответно в код се представят празните и запълнените позиции на фигурите като масив от символни низове.
@@ -287,10 +299,11 @@ constexpr char *tetrominoes[] =
   ".XX."
   "....",
 };
-constexpr size_t num_tetrominoes = sizeof tetrominoes / sizeof *tetrominoes;
+constexpr size_t num_tetrominoes =
+  sizeof tetrominoes / sizeof *tetrominoes;
 \end{verbatim}
 
-Вида Тетромино се представя с индекс от този масив -- число от 0 до \texttt{num_tetrominoes}.
+\begin{sloppypar}Вида Тетромино се представя с индекс от този масив -- число от 0 до \texttt{num_tetrominoes}.\end{sloppypar}
 
 Различните ориентации на всяко едно Тетромино се получават като индексираме символните низове в различен ред.
 Всеки квадрат от 4x4 мрежата представлява точка от координатна система, описана на фирура \ref{tetrogrid}.
@@ -344,6 +357,7 @@ struct Tetromino
 \end{itemize}
 
 \subsection{Кодиране на поставените парчета}
+\label{stack}
 
 Поставените парчета се съхраняват в двумерен масив от тип \texttt{bool} с размери 8x32:
 
@@ -566,7 +580,7 @@ void draw_stack()
   \end{tabular}
 \end{center}
 
-\begin{figure}[h!]
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\linewidth]{img/display_wiring.png}
     \caption{Свързване на MAX7219 FC-16 модул}
@@ -602,7 +616,7 @@ void draw_stack()
   \end{tabular}
 \end{center}
 
-\begin{figure}[h!]
+\begin{figure}[!htbp]
     \centering
     \includegraphics[width=0.5\linewidth]{img/encoder_wiring.png}
     \caption{Свързване на ротационен енкодер}
