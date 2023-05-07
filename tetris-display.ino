@@ -171,6 +171,15 @@ void place_piece()
       for (int dy=0; dy<4; ++dy)
         if (rotations[piece_rot](dx, dy, piece_idx) == 'X')
           stack[piece_x+dx][piece_y+dy] = true;
+  for (int y=DPY_HEIGHT-1, offset=0; 0 <= y; --y)
+  {
+    if (stack[0][y] && stack[0][y] == stack[1][y] && stack[1][y] == stack[2][y] && stack[2][y] == stack[3][y] &&
+          stack[3][y] == stack[4][y] && stack[4][y] == stack[5][y] && stack[5][y] == stack[6][y] && stack[6][y] == stack[7][y])
+      ++offset;
+    else
+      for (int x=0; x<DPY_WIDTH; ++x)
+        stack[x][y+offset] = stack[x][y];
+  }
   piece_x = piece_y = piece_rot = 0;
   piece_idx = (piece_idx + 1) % num_tetrominoes;
 }
