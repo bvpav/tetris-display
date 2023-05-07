@@ -129,16 +129,33 @@ const char (*rotations[])(int dx, int dy, int tetromino_idx) = {
 };
 constexpr size_t num_rotations = sizeof rotations / sizeof *rotations;
 
-int piece_x=0, piece_y=0, piece_idx=0, piece_rot=0;
+
+struct Tetromino
+{
+  int x=0, y=0, type=0, rotation=0;
+
+  Tetromino()
+  {}
+
+  Tetromino(int x, int y, int type, int rotation)
+    : x(x), y(y), type(type), rotation(rotation)
+  {}
+
+  bool get_pos(int dx, int dy)
+  {
+    return rotations[rotation](dx, dy, type) == 'X';
+  }
+} tetromino;
+
 bool is_gravity_enabled=false;
 
 bool stack[DPY_WIDTH][DPY_HEIGHT]{false};
 
-void draw_tetromino(int x, int y, int tetromino_idx, int rotation)
+void draw_tetromino(const struct Tetromino &t)
 {
   for (int dx=0; dx<4; ++dx)
     for (int dy=0; dy<4; ++dy)
-      dpy.setPoint(DPY_WIDTH-x-1-dx, DPY_HEIGHT-y-1-dy, rotations[rotation](dx, dy, tetromino_idx) == 'X');
+      dpy.setPoint(DPY_WIDTH-t.x-1-dx, DPY_HEIGHT-t.y-1-dy, t.get_pos(dx, dy));
 }
 
 void draw_stack()
@@ -156,21 +173,23 @@ bool is_pos_free(int x, int y)
     !stack[x][y];
 }
 
-bool can_have_tetromino(int x, int y, int tetromino_idx, int rotation)
+// TODO: make method of Tetromino
+bool can_have_tetromino(const struct Tetromino &t)
 {
   for (int dx=0; dx<4; ++dx)
     for (int dy=0; dy<4; ++dy)
-      if (rotations[rotation](dx, dy, tetromino_idx) == 'X' && !is_pos_free(x+dx, y+dy))
+      if (t.get_pos(dx, dy) && !is_pos_free(t.x+dx, t.y+dy))
         return false;
   return true;
 }
 
+// TODO: make method of Tetromino
 void place_piece()
 {
   for (int dx=0; dx<4; ++dx)
       for (int dy=0; dy<4; ++dy)
-        if (rotations[piece_rot](dx, dy, piece_idx) == 'X')
-          stack[piece_x+dx][piece_y+dy] = true;
+        if (tetromino.get_pos(dx, dy))
+          stack[tetromino.x+dx][tetromino.y+dy] = true;
   for (int y=DPY_HEIGHT-1, offset=0; 0 <= y; --y)
   {
     if (stack[0][y] && stack[0][y] == stack[1][y] && stack[1][y] == stack[2][y] && stack[2][y] == stack[3][y] &&
@@ -180,10 +199,11 @@ void place_piece()
       for (int x=0; x<DPY_WIDTH; ++x)
         stack[x][y+offset] = stack[x][y];
   }
-  piece_x = piece_y = piece_rot = 0;
-  piece_idx = (piece_idx + 1) % num_tetrominoes;
+  tetromino.x = tetromino.y = tetromino.rotation = 0;
+  tetromino.type = (tetromino.type + 1) % num_tetrominoes;
 }
 
+// TODO: make method of Tetromino
 void apply_gravity()
 {
   static unsigned long last_update = millis();
@@ -192,8 +212,8 @@ void apply_gravity()
     return;
   last_update = now;
   
-  if (can_have_tetromino(piece_x, piece_y+1, piece_idx, piece_rot))
-    ++piece_y;
+  if (can_have_tetromino(tetromino))
+    ++tetromino.y;
   else
     place_piece();
   redraw();
@@ -202,7 +222,7 @@ void apply_gravity()
 void redraw()
 {
   dpy.clear();
-  draw_tetromino(piece_x, piece_y, piece_idx, piece_rot);
+  draw_tetromino(tetromino);
   draw_stack();
 }
 
@@ -223,37 +243,37 @@ void loop()
     {
       case Key::Up:
       {
-        int new_piece_rot = (piece_rot + 1) % num_rotations;
-        if (can_have_tetromino(piece_x, piece_y, piece_idx, new_piece_rot))
+        int new_piece_rot = (tetromino.rotation + 1) % num_rotations;
+        if (can_have_tetromino(Tetromino(tetromino.x, tetromino.y, tetromino.type, new_piece_rot)))
         {
-          piece_rot = new_piece_rot;
+          tetromino.rotation = new_piece_rot;
           redraw();
         }     
       } break;
       case Key::Down:
-        if (can_have_tetromino(piece_x, piece_y+1, piece_idx, piece_rot))
+        if (can_have_tetromino(Tetromino(tetromino.x, tetromino.y+1, tetromino.type, tetromino.rotation)))
         {
-          ++piece_y;
+          ++tetromino.y;
           redraw();
         }
         break;
       case Key::Left:
-        if (can_have_tetromino(piece_x-1, piece_y, piece_idx, piece_rot))
+        if (can_have_tetromino(Tetromino(tetromino.x-1, tetromino.y, tetromino.type, tetromino.rotation)))
         {
-          --piece_x;
+          --tetromino.x;
           redraw();
         }
         break;
       case Key::Right:
-        if (can_have_tetromino(piece_x+1, piece_y, piece_idx, piece_rot))
+        if (can_have_tetromino(Tetromino(tetromino.x+1, tetromino.y, tetromino.type, tetromino.rotation)))
         {
-          ++piece_x;
+          ++tetromino.x;
           redraw();
         }
         break;
       case Key::Drop:
-        while (can_have_tetromino(piece_x, piece_y+1, piece_idx, piece_rot))
-            ++piece_y;
+        while (can_have_tetromino(Tetromino(tetromino.x, tetromino.y+1, tetromino.type, tetromino.rotation)))
+            ++tetromino.y;
         place_piece();
         break;
     }
