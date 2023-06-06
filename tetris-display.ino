@@ -2,7 +2,7 @@
 
 constexpr int GAME_DPY_WIDTH=8, GAME_DPY_HEIGHT=32;
 constexpr int PREVIEW_DPY_WIDTH=8, PREVIEW_DPY_HEIGHT=32;
-constexpr int GAME_DPY_CS_PIN=10, PREVIEW_DPY_PIN=8; // Digital
+constexpr int GAME_DPY_CS_PIN=10, PREVIEW_DPY_CS_PIN=8; // Digital
 constexpr int KEYPAD_OUT_PIN=0; // Analog
 constexpr int ENC_CLK_PIN=2, ENC_DT_PIN=3, ENC_SW_PIN=4; // Digital
 
@@ -81,7 +81,7 @@ struct Encoder
 };
 
 MD_MAX72XX game_dpy(MD_MAX72XX::FC16_HW, GAME_DPY_CS_PIN, GAME_DPY_HEIGHT/8);
-MD_MAX72XX preview_dpy(MD_MAX72XX::FC16_HW, GAME_DPY_CS_PIN, GAME_DPY_HEIGHT/8);
+MD_MAX72XX preview_dpy(MD_MAX72XX::FC16_HW, PREVIEW_DPY_CS_PIN, PREVIEW_DPY_HEIGHT/8);
 Encoder enc(ENC_CLK_PIN, ENC_DT_PIN, ENC_SW_PIN);
 
 constexpr char *tetrominoes[] =
@@ -136,7 +136,7 @@ bool stack[GAME_DPY_WIDTH][GAME_DPY_HEIGHT]{false};
 
 struct Tetromino
 {
-  int x=0, y=0, type=0, rotation=0;
+  int x = GAME_DPY_WIDTH/2 - 2, y = GAME_DPY_WIDTH/2 - 2, type=0, rotation=0;
 
   Tetromino()
   {}
@@ -166,7 +166,7 @@ struct Tetromino
     {
       rotation = new_piece_rot;
       // XXX: maybe don't redraw here, but outside??
-      redraw();
+      game_redraw();
     }
   }
 
@@ -175,7 +175,7 @@ struct Tetromino
     if (Tetromino(x, y+1, type, rotation).can_exist())
     {
       ++y;
-      redraw();
+      game_redraw();
     }
     else
       place();
@@ -196,7 +196,7 @@ struct Tetromino
     if (Tetromino(x-1, y, type, rotation).can_exist())
     {
       --x;
-      redraw();
+      game_redraw();
     }
   }
 
@@ -205,7 +205,7 @@ struct Tetromino
     if (Tetromino(x+1, y, type, rotation).can_exist())
     {
       ++x;
-      redraw();
+      game_redraw();
     }
   }
 
@@ -215,27 +215,29 @@ struct Tetromino
       ++y;
   }
 
-  void place()
-  {
-    for (int dx=0; dx<4; ++dx)
-        for (int dy=0; dy<4; ++dy)
-          if (get_pos(dx, dy))
-            stack[x+dx][y+dy] = true;
-    for (int y=GAME_DPY_HEIGHT-1, offset=0; 0 <= y; --y)
-    {
-      if (stack[0][y] && stack[0][y] == stack[1][y] && stack[1][y] == stack[2][y] && stack[2][y] == stack[3][y] &&
-            stack[3][y] == stack[4][y] && stack[4][y] == stack[5][y] && stack[5][y] == stack[6][y] && stack[6][y] == stack[7][y])
-        ++offset;
-      else
-        for (int x=0; x<GAME_DPY_WIDTH; ++x)
-          stack[x][y+offset] = stack[x][y];
-    }
-    x = y = rotation = 0;
-    type = (type + 1) % num_tetrominoes;
-  }
-} tetromino;
+  void place();
+} tetromino, next_tetromino;
 
 bool is_gravity_enabled=false;
+
+void Tetromino::place()
+{
+  for (int dx=0; dx<4; ++dx)
+      for (int dy=0; dy<4; ++dy)
+        if (get_pos(dx, dy))
+          stack[x+dx][y+dy] = true;
+  for (int y=GAME_DPY_HEIGHT-1, offset=0; 0 <= y; --y)
+  {
+    if (stack[0][y] && stack[0][y] == stack[1][y] && stack[1][y] == stack[2][y] && stack[2][y] == stack[3][y] &&
+          stack[3][y] == stack[4][y] && stack[4][y] == stack[5][y] && stack[5][y] == stack[6][y] && stack[6][y] == stack[7][y])
+      ++offset;
+    else
+      for (int x=0; x<GAME_DPY_WIDTH; ++x)
+        stack[x][y+offset] = stack[x][y];
+  }
+  *this = next_tetromino;
+  y = 0;
+}
 
 void draw_tetromino(MD_MAX72XX &dpy, const struct Tetromino &t)
 {
@@ -259,14 +261,17 @@ bool is_pos_free(int x, int y)
     !stack[x][y];
 }
 
-// TODO: make method of Tetromino
-
-
-void redraw()
+void game_redraw()
 {
   game_dpy.clear();
   draw_tetromino(game_dpy, tetromino);
   draw_stack();
+}
+
+void preview_redraw()
+{
+  preview_dpy.clear();
+  draw_tetromino(preview_dpy, next_tetromino);
 }
 
 void setup()
@@ -275,7 +280,8 @@ void setup()
   game_dpy.begin();
   preview_dpy.begin();
   enc.begin();
-  redraw();
+  game_redraw();
+  preview_redraw();
 }
 
 void loop()
@@ -304,7 +310,15 @@ void loop()
     }
   enc.read();
   if (enc.has_rotated)
-    Serial.println(enc.wrapped_rotation(num_tetrominoes));
+  {
+    next_tetromino.type = enc.wrapped_rotation(num_tetrominoes);
+    preview_redraw();
+    if (!is_gravity_enabled)
+    {
+      tetromino = next_tetromino;
+      game_redraw();
+    }
+  }
   if (enc.was_button_pressed)
     ((void (*)())0)(); // reset arduino
   if (is_gravity_enabled)
