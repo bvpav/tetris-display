@@ -5,6 +5,7 @@ constexpr int PREVIEW_DPY_WIDTH=8, PREVIEW_DPY_HEIGHT=32;
 constexpr int GAME_DPY_CS_PIN=10, PREVIEW_DPY_CS_PIN=8; // Digital
 constexpr int KEYPAD_OUT_PIN=0; // Analog
 constexpr int ENC_CLK_PIN=2, ENC_DT_PIN=3, ENC_SW_PIN=4; // Digital
+constexpr int BLINK_TIME_MS = 500;
 
 enum struct Key : byte
 {
@@ -218,8 +219,6 @@ struct Tetromino
   void place();
 } tetromino, next_tetromino;
 
-bool is_gravity_enabled=false;
-
 void Tetromino::place()
 {
   for (int dx=0; dx<4; ++dx)
@@ -274,21 +273,65 @@ void preview_redraw()
   draw_tetromino(preview_dpy, next_tetromino);
 }
 
+void preview_next_tetromino()
+{
+  next_tetromino.type = enc.wrapped_rotation(num_tetrominoes);
+  preview_redraw();
+}
+
 void setup()
 {
   Serial.begin(9600);
   game_dpy.begin();
   preview_dpy.begin();
   enc.begin();
-  game_redraw();
-  preview_redraw();
 }
 
-void loop()
+void press_start_loop()
 {
-  if (!is_gravity_enabled && get_pressed_key(KEYPAD_OUT_PIN) != Key::None)
-    is_gravity_enabled = true;
-  else
+  game_dpy.clear();
+  preview_redraw();
+  while (true)
+  {
+    if (get_pressed_key(KEYPAD_OUT_PIN) != Key::None)
+      return;
+    enc.read();
+    if (enc.has_rotated)
+    {
+      preview_next_tetromino();
+      tetromino = next_tetromino;
+    }
+    delay(1);
+  }
+}
+
+void blink_stack_loop()
+{
+  game_dpy.clear();
+  unsigned long last_update = millis();
+  bool is_on = false;
+  tetromino = next_tetromino;
+  while (true)
+  {
+    if (get_pressed_key(KEYPAD_OUT_PIN) != Key::None || (enc.read(), enc.was_button_pressed))
+      return;
+    unsigned long now = millis();
+    if (BLINK_TIME_MS <= now - last_update)
+    {
+      last_update = now;
+      is_on = !is_on;
+      game_dpy.clear();
+      if (is_on)
+        draw_stack();
+    }
+  }
+}
+
+void game_loop()
+{
+  game_redraw();
+  while (true)
+  {
     switch (get_pressed_key(KEYPAD_OUT_PIN))
     {
       case Key::Up:
@@ -308,20 +351,20 @@ void loop()
         tetromino.place();
         break;
     }
-  enc.read();
-  if (enc.has_rotated)
-  {
-    next_tetromino.type = enc.wrapped_rotation(num_tetrominoes);
-    preview_redraw();
-    if (!is_gravity_enabled)
-    {
-      tetromino = next_tetromino;
-      game_redraw();
-    }
-  }
-  if (enc.was_button_pressed)
-    ((void (*)())0)(); // reset arduino
-  if (is_gravity_enabled)
+    enc.read();
+    if (enc.has_rotated)
+      preview_next_tetromino();
+    if (enc.was_button_pressed)
+      return;
     tetromino.apply_gravity_timed();
-  delay(1);
+    delay(1);
+  }
+}
+
+void loop()
+{
+  press_start_loop();
+  game_loop();
+  blink_stack_loop();
+  memset(stack, 0, sizeof stack);
 }
