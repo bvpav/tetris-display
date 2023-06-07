@@ -327,8 +327,35 @@ void blink_stack_loop()
   }
 }
 
+void blink_preview_loop()
+{
+  game_dpy.clear();
+  draw_stack();
+  preview_dpy.clear();
+  unsigned long last_update = millis();
+  bool is_on = false;
+  tetromino = next_tetromino;
+  while (true)
+  {
+    if (get_pressed_key(KEYPAD_OUT_PIN) != Key::None || (enc.read(), enc.was_button_pressed))
+      return;
+    unsigned long now = millis();
+    if (BLINK_TIME_MS <= now - last_update)
+    {
+      last_update = now;
+      is_on = !is_on;
+      if (is_on)
+        preview_redraw();
+      else
+        preview_dpy.clear();
+    }
+  }
+}
+
 void game_loop()
 {
+  bool should_drop = false;
+  unsigned long drop_pressed_at;
   game_redraw();
   while (true)
   {
@@ -347,8 +374,16 @@ void game_loop()
         tetromino.move_right();
         break;
       case Key::Drop:
-        tetromino.drop();
-        tetromino.place();
+        should_drop = true;
+        drop_pressed_at = millis();
+        break;
+      case Key::None:
+        if (should_drop && 3000 <= millis() - drop_pressed_at)
+        {
+          tetromino.drop();
+          tetromino.place();
+          should_drop = false;
+        }
         break;
     }
     enc.read();
@@ -366,5 +401,6 @@ void loop()
   press_start_loop();
   game_loop();
   blink_stack_loop();
+  blink_preview_loop();
   memset(stack, 0, sizeof stack);
 }
