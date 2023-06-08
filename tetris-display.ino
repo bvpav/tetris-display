@@ -133,6 +133,8 @@ const char (*rotations[])(int dx, int dy, int tetromino_idx) =
 };
 constexpr size_t num_rotations = sizeof rotations / sizeof *rotations;
 
+int prev_tetromino_type = -1;
+
 bool stack[GAME_DPY_WIDTH][GAME_DPY_HEIGHT]{false};
 
 struct Tetromino
@@ -171,7 +173,7 @@ struct Tetromino
     }
   }
 
-  void apply_gravity()
+  bool apply_gravity()
   {
     if (Tetromino(x, y+1, type, rotation).can_exist())
     {
@@ -179,17 +181,18 @@ struct Tetromino
       game_redraw();
     }
     else
-      place();
+      return place();
+    return false;
   }
 
-  void apply_gravity_timed()
+  bool apply_gravity_timed()
   {
     static unsigned long last_update = millis();
     unsigned long now = millis();
     if (now - last_update < 1000)
-      return;
+      return false;
     last_update = now;
-    apply_gravity();
+    return apply_gravity();
   }
 
   void move_left()
@@ -216,10 +219,10 @@ struct Tetromino
       ++y;
   }
 
-  void place();
+  bool place();
 } tetromino, next_tetromino;
 
-void Tetromino::place()
+bool Tetromino::place()
 {
   for (int dx=0; dx<4; ++dx)
       for (int dy=0; dy<4; ++dy)
@@ -234,8 +237,12 @@ void Tetromino::place()
       for (int x=0; x<GAME_DPY_WIDTH; ++x)
         stack[x][y+offset] = stack[x][y];
   }
+  if (next_tetromino.type == type || (0 <= prev_tetromino_type && next_tetromino.type == prev_tetromino_type))
+    return true;
+  prev_tetromino_type = type;
   *this = next_tetromino;
   y = 0;
+  return false;
 }
 
 void draw_tetromino(MD_MAX72XX &dpy, const struct Tetromino &t)
@@ -365,7 +372,8 @@ void game_loop()
         tetromino.rotate();
         break;
       case Key::Down:
-        tetromino.apply_gravity();
+        if (tetromino.apply_gravity())
+          return;
         break;
       case Key::Left:
         tetromino.move_left();
@@ -375,13 +383,15 @@ void game_loop()
         break;
       case Key::Drop:
         should_drop = true;
+        Serial.println("should drop");
         drop_pressed_at = millis();
         break;
       case Key::None:
         if (should_drop && 3000 <= millis() - drop_pressed_at)
         {
           tetromino.drop();
-          tetromino.place();
+          if (tetromino.place())
+            return;
           should_drop = false;
         }
         break;
@@ -391,7 +401,8 @@ void game_loop()
       preview_next_tetromino();
     if (enc.was_button_pressed)
       return;
-    tetromino.apply_gravity_timed();
+    if (tetromino.apply_gravity_timed())
+      return;
     delay(1);
   }
 }
